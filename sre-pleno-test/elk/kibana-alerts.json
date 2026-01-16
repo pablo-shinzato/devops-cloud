@@ -1,0 +1,248 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "high-error-rate-alert",
+      "type": "alert",
+      "attributes": {
+        "name": "High Error Rate - Online Boutique",
+        "tags": ["sre", "errors", "critical"],
+        "alertTypeId": ".es-query",
+        "consumer": "alerts",
+        "schedule": {
+          "interval": "1m"
+        },
+        "enabled": true,
+        "actions": [
+          {
+            "group": "query matched",
+            "id": "webhook-action",
+            "params": {
+              "message": "ALERTA: Alta taxa de erros detectada na aplicação Online Boutique!\n\nDetalhes:\n- Ambiente: Staging\n- Threshold: 20 erros em 5 minutos\n- Timestamp: {{context.date}}\n- Total de Erros: {{context.hits}}\n\nAção Requerida: Investigar imediatamente os logs no Kibana."
+            }
+          }
+        ],
+        "params": {
+          "index": ["app-logs-staging-*"],
+          "timeField": "@timestamp",
+          "esQuery": {
+            "query": {
+              "bool": {
+                "must": [
+                  {
+                    "match": {
+                      "log_level": "ERROR"
+                    }
+                  }
+                ],
+                "filter": [
+                  {
+                    "range": {
+                      "@timestamp": {
+                        "gte": "now-5m",
+                        "lte": "now"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "threshold": [20],
+          "thresholdComparator": ">=",
+          "timeWindowSize": 5,
+          "timeWindowUnit": "m"
+        },
+        "throttle": "10m",
+        "notifyWhen": "onActionGroupChange"
+      }
+    },
+    {
+      "id": "service-down-alert",
+      "type": "alert",
+      "attributes": {
+        "name": "Service Down - No Logs Received",
+        "tags": ["sre", "availability", "critical"],
+        "alertTypeId": ".es-query",
+        "consumer": "alerts",
+        "schedule": {
+          "interval": "2m"
+        },
+        "enabled": true,
+        "actions": [
+          {
+            "group": "query matched",
+            "id": "webhook-action",
+            "params": {
+              "message": "ALERTA: Serviço pode estar down - Nenhum log recebido!\n\nDetalhes:\n- Ambiente: Staging\n- Período sem logs: 5 minutos\n- Timestamp: {{context.date}}\n\nAção Requerida: Verificar status dos pods no Kubernetes."
+            }
+          }
+        ],
+        "params": {
+          "index": ["app-logs-staging-*"],
+          "timeField": "@timestamp",
+          "esQuery": {
+            "query": {
+              "bool": {
+                "must": [
+                  {
+                    "exists": {
+                      "field": "service_name"
+                    }
+                  }
+                ],
+                "filter": [
+                  {
+                    "range": {
+                      "@timestamp": {
+                        "gte": "now-5m",
+                        "lte": "now"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "threshold": [1],
+          "thresholdComparator": "<",
+          "timeWindowSize": 5,
+          "timeWindowUnit": "m"
+        },
+        "throttle": "15m",
+        "notifyWhen": "onActionGroupChange"
+      }
+    },
+    {
+      "id": "high-latency-alert",
+      "type": "alert",
+      "attributes": {
+        "name": "High Latency Detected",
+        "tags": ["sre", "performance", "warning"],
+        "alertTypeId": ".es-query",
+        "consumer": "alerts",
+        "schedule": {
+          "interval": "2m"
+        },
+        "enabled": true,
+        "actions": [
+          {
+            "group": "query matched",
+            "id": "webhook-action",
+            "params": {
+              "message": "ALERTA: Alta latência detectada na aplicação!\n\nDetalhes:\n- Ambiente: Staging\n- Threshold: Latência > 1000ms\n- Timestamp: {{context.date}}\n- Requisições afetadas: {{context.hits}}\n\nAção Requerida: Verificar performance dos serviços."
+            }
+          }
+        ],
+        "params": {
+          "index": ["app-logs-staging-*"],
+          "timeField": "@timestamp",
+          "esQuery": {
+            "query": {
+              "bool": {
+                "must": [
+                  {
+                    "range": {
+                      "latency_ms": {
+                        "gte": 1000
+                      }
+                    }
+                  }
+                ],
+                "filter": [
+                  {
+                    "range": {
+                      "@timestamp": {
+                        "gte": "now-5m",
+                        "lte": "now"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "threshold": [10],
+          "thresholdComparator": ">=",
+          "timeWindowSize": 5,
+          "timeWindowUnit": "m"
+        },
+        "throttle": "10m",
+        "notifyWhen": "onActionGroupChange"
+      }
+    },
+    {
+      "id": "pod-crash-alert",
+      "type": "alert",
+      "attributes": {
+        "name": "Pod Crash Loop Detected",
+        "tags": ["sre", "kubernetes", "critical"],
+        "alertTypeId": ".es-query",
+        "consumer": "alerts",
+        "schedule": {
+          "interval": "1m"
+        },
+        "enabled": true,
+        "actions": [
+          {
+            "group": "query matched",
+            "id": "webhook-action",
+            "params": {
+              "message": "ALERTA: Pod em CrashLoopBackOff detectado!\n\nDetalhes:\n- Ambiente: Staging\n- Timestamp: {{context.date}}\n- Pods afetados: {{context.hits}}\n\nAção Requerida: Verificar logs do pod e status no Kubernetes."
+            }
+          }
+        ],
+        "params": {
+          "index": ["app-logs-staging-*"],
+          "timeField": "@timestamp",
+          "esQuery": {
+            "query": {
+              "bool": {
+                "should": [
+                  {
+                    "match_phrase": {
+                      "message": "CrashLoopBackOff"
+                    }
+                  },
+                  {
+                    "match_phrase": {
+                      "message": "Error: ImagePullBackOff"
+                    }
+                  },
+                  {
+                    "match_phrase": {
+                      "message": "OOMKilled"
+                    }
+                  }
+                ],
+                "minimum_should_match": 1,
+                "filter": [
+                  {
+                    "range": {
+                      "@timestamp": {
+                        "gte": "now-5m",
+                        "lte": "now"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "threshold": [1],
+          "thresholdComparator": ">=",
+          "timeWindowSize": 5,
+          "timeWindowUnit": "m"
+        },
+        "throttle": "10m",
+        "notifyWhen": "onActionGroupChange"
+      }
+    }
+  ],
+  "exportedCount": 4,
+  "missingRefCount": 0,
+  "missingReferences": [],
+  "excludedObjects": [],
+  "excludedObjectsCount": 0
+}
+

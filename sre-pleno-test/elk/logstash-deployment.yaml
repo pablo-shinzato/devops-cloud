@@ -1,0 +1,104 @@
+---
+# Logstash Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+    component: logging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+        component: logging
+    spec:
+      containers:
+      - name: logstash
+        image: docker.elastic.co/logstash/logstash:8.11.0
+        ports:
+        - containerPort: 5044
+          name: beats
+          protocol: TCP
+        - containerPort: 9600
+          name: http
+          protocol: TCP
+        env:
+        - name: LS_JAVA_OPTS
+          value: "-Xmx1g -Xms1g"
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch-master:9200"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
+          readOnly: true
+        - name: pipeline
+          mountPath: /usr/share/logstash/pipeline/logstash.conf
+          subPath: logstash.conf
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.yml
+            path: logstash.yml
+      - name: pipeline
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.conf
+            path: logstash.conf
+
+---
+# Logstash Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+    component: logging
+spec:
+  type: ClusterIP
+  selector:
+    app: logstash
+  ports:
+  - name: beats
+    port: 5044
+    targetPort: 5044
+    protocol: TCP
+  - name: http
+    port: 9600
+    targetPort: 9600
+    protocol: TCP
+

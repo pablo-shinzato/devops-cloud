@@ -1,0 +1,52 @@
+---
+# ServiceMonitor para coletar métricas de todos os serviços da Online Boutique
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: online-boutique-metrics
+  namespace: monitoring
+  labels:
+    app: online-boutique
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      environment: staging
+  namespaceSelector:
+    matchNames:
+    - online-boutique
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+    scheme: http
+  - port: grpc
+    interval: 30s
+    path: /metrics
+    scheme: http
+
+---
+# PodMonitor para coletar métricas diretamente dos pods
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: online-boutique-pods
+  namespace: monitoring
+  labels:
+    app: online-boutique
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      environment: staging
+  namespaceSelector:
+    matchNames:
+    - online-boutique
+  podMetricsEndpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+  - port: grpc
+    interval: 30s
+    path: /metrics
+

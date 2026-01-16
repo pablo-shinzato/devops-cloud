@@ -1,1 +1,0 @@
-# teste-pratico-sre-pleno

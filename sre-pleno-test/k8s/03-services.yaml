@@ -1,0 +1,240 @@
+---
+# Redis Cart Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cart
+  namespace: online-boutique
+  labels:
+    app: redis-cart
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: redis-cart
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+    protocol: TCP
+
+---
+# Email Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: emailservice
+  namespace: online-boutique
+  labels:
+    app: emailservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: emailservice
+  ports:
+  - name: grpc
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+
+---
+# Recommendation Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendationservice
+  namespace: online-boutique
+  labels:
+    app: recommendationservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: recommendationservice
+  ports:
+  - name: grpc
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+
+---
+# Product Catalog Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: productcatalogservice
+  namespace: online-boutique
+  labels:
+    app: productcatalogservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: productcatalogservice
+  ports:
+  - name: grpc
+    port: 3550
+    targetPort: 3550
+    protocol: TCP
+
+---
+# Payment Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: paymentservice
+  namespace: online-boutique
+  labels:
+    app: paymentservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: paymentservice
+  ports:
+  - name: grpc
+    port: 50051
+    targetPort: 50051
+    protocol: TCP
+
+---
+# Currency Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: currencyservice
+  namespace: online-boutique
+  labels:
+    app: currencyservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: currencyservice
+  ports:
+  - name: grpc
+    port: 7000
+    targetPort: 7000
+    protocol: TCP
+
+---
+# Shipping Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: shippingservice
+  namespace: online-boutique
+  labels:
+    app: shippingservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: shippingservice
+  ports:
+  - name: grpc
+    port: 50051
+    targetPort: 50051
+    protocol: TCP
+
+---
+# Ad Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: adservice
+  namespace: online-boutique
+  labels:
+    app: adservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: adservice
+  ports:
+  - name: grpc
+    port: 9555
+    targetPort: 9555
+    protocol: TCP
+
+---
+# Cart Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cartservice
+  namespace: online-boutique
+  labels:
+    app: cartservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: cartservice
+  ports:
+  - name: grpc
+    port: 7070
+    targetPort: 7070
+    protocol: TCP
+
+---
+# Checkout Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkoutservice
+  namespace: online-boutique
+  labels:
+    app: checkoutservice
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: checkoutservice
+  ports:
+  - name: grpc
+    port: 5050
+    targetPort: 5050
+    protocol: TCP
+
+---
+# Frontend Service (Internal)
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: online-boutique
+  labels:
+    app: frontend
+    environment: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+
+---
+# Frontend Service (External - LoadBalancer)
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-external
+  namespace: online-boutique
+  labels:
+    app: frontend
+    environment: staging
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+

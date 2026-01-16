@@ -1,0 +1,612 @@
+{
+  "dashboard": {
+    "title": "Online Boutique - SRE Dashboard",
+    "tags": ["sre", "online-boutique", "microservices"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "version": 1,
+    "panels": [
+      {
+        "id": 1,
+        "title": "📊 Overview - Request Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{namespace=\"online-boutique\"}[5m])) by (service)",
+            "legendFormat": "{{ service }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true,
+          "values": true
+        }
+      },
+      {
+        "id": 2,
+        "title": "⚡ Latency - P50/P95/P99",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"online-boutique\"}[5m])) by (le, service))",
+            "legendFormat": "P50 - {{ service }}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"online-boutique\"}[5m])) by (le, service))",
+            "legendFormat": "P95 - {{ service }}",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=\"online-boutique\"}[5m])) by (le, service))",
+            "legendFormat": "P99 - {{ service }}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Latency"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true,
+          "values": true
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [1],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["B", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Latency P95",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 3,
+        "title": "🚨 Error Rate (%)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "(sum(rate(http_requests_total{namespace=\"online-boutique\",status=~\"5..\"}[5m])) by (service) / sum(rate(http_requests_total{namespace=\"online-boutique\"}[5m])) by (service)) * 100",
+            "legendFormat": "{{ service }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Error Rate",
+            "max": 100,
+            "min": 0
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true,
+          "values": true
+        },
+        "thresholds": [
+          {
+            "value": 5,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Error Rate",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 4,
+        "title": "💻 CPU Usage by Pod",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"online-boutique\",container!=\"\"}[5m])) by (pod) * 100",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU Usage",
+            "max": 100,
+            "min": 0
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true,
+          "values": true
+        },
+        "thresholds": [
+          {
+            "value": 70,
+            "colorMode": "custom",
+            "op": "gt",
+            "fill": false,
+            "line": true,
+            "lineColor": "rgba(237, 129, 40, 0.89)"
+          },
+          {
+            "value": 90,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "🧠 Memory Usage by Pod",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(container_memory_working_set_bytes{namespace=\"online-boutique\",container!=\"\"}) by (pod) / 1024 / 1024",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "mbytes",
+            "label": "Memory Usage"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true,
+          "values": true
+        },
+        "thresholds": [
+          {
+            "value": 200,
+            "colorMode": "custom",
+            "op": "gt",
+            "fill": false,
+            "line": true,
+            "lineColor": "rgba(237, 129, 40, 0.89)"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "🔄 Pod Restart Count",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"online-boutique\"}) by (pod)",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Restart Count"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "current": true,
+          "max": true,
+          "values": true
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [3],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "10m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "diff"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Pod Crash Loop",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 7,
+        "title": "📈 HPA Status - Current vs Desired Replicas",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"online-boutique\"}",
+            "legendFormat": "Current - {{ horizontalpodautoscaler }}",
+            "refId": "A"
+          },
+          {
+            "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"online-boutique\"}",
+            "legendFormat": "Desired - {{ horizontalpodautoscaler }}",
+            "refId": "B"
+          },
+          {
+            "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"online-boutique\"}",
+            "legendFormat": "Max - {{ horizontalpodautoscaler }}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Replicas"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "current": true,
+          "values": true
+        }
+      },
+      {
+        "id": 8,
+        "title": "🎯 SLI/SLO Tracking",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{namespace=\"online-boutique\",status!~\"5..\"}[5m])) / sum(rate(http_requests_total{namespace=\"online-boutique\"}[5m])) * 100",
+            "legendFormat": "Availability %",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"online-boutique\"}[5m])) by (le))",
+            "legendFormat": "P95 Latency (s)",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{namespace=\"online-boutique\"}[5m]))",
+            "legendFormat": "Request Rate (req/s)",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 95,
+                  "color": "yellow"
+                },
+                {
+                  "value": 99,
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "decimals": 2
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "🌐 Request Throughput by Service",
+        "type": "bargauge",
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{namespace=\"online-boutique\"}[5m])) by (service)",
+            "legendFormat": "{{ service }}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient",
+          "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "📊 Pod Status Overview",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 40,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "kube_pod_status_phase{namespace=\"online-boutique\"}",
+            "legendFormat": "",
+            "refId": "A",
+            "instant": true,
+            "format": "table"
+          },
+          {
+            "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"online-boutique\"}) by (pod)",
+            "legendFormat": "",
+            "refId": "B",
+            "instant": true,
+            "format": "table"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "merge"
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "displayName": "pod",
+              "desc": false
+            }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "phase"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "type": "value",
+                      "options": {
+                        "Running": {
+                          "color": "green",
+                          "index": 0
+                        },
+                        "Pending": {
+                          "color": "yellow",
+                          "index": 1
+                        },
+                        "Failed": {
+                          "color": "red",
+                          "index": 2
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "namespace",
+          "type": "constant",
+          "current": {
+            "value": "online-boutique",
+            "text": "online-boutique"
+          }
+        },
+        {
+          "name": "service",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(http_requests_total{namespace=\"online-boutique\"}, service)",
+          "refresh": 1,
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{namespace=\"online-boutique\",alertstate=\"firing\"}",
+          "iconColor": "red",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{ alertname }}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}
+

@@ -1,0 +1,100 @@
+# SRE Pleno Test - .gitignore
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+.kube/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Secrets
+*.key
+*.pem
+*.crt
+secrets.yaml
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+dist/
+build/
+target/
+*.tar.gz
+*.zip
+
+# Docker
+.dockerignore
+
+# Helm
+charts/*.tgz
+.helm/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+
+# Test results
+results/
+coverage/
+*.coverage
+
+# Backup files
+*.bak
+*.backup
+
+# OS
+Thumbs.db
+.DS_Store
+
+# CI/CD
+.github/workflows/*.tmp
+
+# Monitoring data
+prometheus-data/
+grafana-data/
+elasticsearch-data/
+
+# Local development
+local/
+.local/
+

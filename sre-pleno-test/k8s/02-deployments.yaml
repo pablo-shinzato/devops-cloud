@@ -1,0 +1,837 @@
+---
+# Redis Cart Storage
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cart
+  namespace: online-boutique
+  labels:
+    app: redis-cart
+    environment: staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cart
+  template:
+    metadata:
+      labels:
+        app: redis-cart
+        environment: staging
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            cpu: 70m
+            memory: 200Mi
+          limits:
+            cpu: 125m
+            memory: 256Mi
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+
+---
+# Email Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emailservice
+  namespace: online-boutique
+  labels:
+    app: emailservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: emailservice
+  template:
+    metadata:
+      labels:
+        app: emailservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/emailservice:v0.8.0
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "8080"
+        - name: ENABLE_PROFILER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: ENABLE_PROFILER
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Recommendation Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendationservice
+  namespace: online-boutique
+  labels:
+    app: recommendationservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: recommendationservice
+  template:
+    metadata:
+      labels:
+        app: recommendationservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.8.0
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "8080"
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: PRODUCT_CATALOG_SERVICE_ADDR
+        - name: ENABLE_PROFILER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: ENABLE_PROFILER
+        resources:
+          requests:
+            cpu: 100m
+            memory: 220Mi
+          limits:
+            cpu: 200m
+            memory: 450Mi
+        livenessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Product Catalog Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productcatalogservice
+  namespace: online-boutique
+  labels:
+    app: productcatalogservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: productcatalogservice
+  template:
+    metadata:
+      labels:
+        app: productcatalogservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3550"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.8.0
+        ports:
+        - containerPort: 3550
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "3550"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 3550
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 3550
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Payment Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paymentservice
+  namespace: online-boutique
+  labels:
+    app: paymentservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: paymentservice
+  template:
+    metadata:
+      labels:
+        app: paymentservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "50051"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/paymentservice:v0.8.0
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "50051"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Currency Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: currencyservice
+  namespace: online-boutique
+  labels:
+    app: currencyservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: currencyservice
+  template:
+    metadata:
+      labels:
+        app: currencyservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "7000"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/currencyservice:v0.8.0
+        ports:
+        - containerPort: 7000
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "7000"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 7000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 7000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Shipping Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shippingservice
+  namespace: online-boutique
+  labels:
+    app: shippingservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shippingservice
+  template:
+    metadata:
+      labels:
+        app: shippingservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "50051"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/shippingservice:v0.8.0
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "50051"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Ad Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adservice
+  namespace: online-boutique
+  labels:
+    app: adservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: adservice
+  template:
+    metadata:
+      labels:
+        app: adservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9555"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/adservice:v0.8.0
+        ports:
+        - containerPort: 9555
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "9555"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 180Mi
+          limits:
+            cpu: 300m
+            memory: 300Mi
+        livenessProbe:
+          grpc:
+            port: 9555
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 9555
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 5
+
+---
+# Cart Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cartservice
+  namespace: online-boutique
+  labels:
+    app: cartservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cartservice
+  template:
+    metadata:
+      labels:
+        app: cartservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "7070"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/cartservice:v0.8.0
+        ports:
+        - containerPort: 7070
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: REDIS_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_ADDR
+        resources:
+          requests:
+            cpu: 200m
+            memory: 64Mi
+          limits:
+            cpu: 300m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 7070
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 7070
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Checkout Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkoutservice
+  namespace: online-boutique
+  labels:
+    app: checkoutservice
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: checkoutservice
+  template:
+    metadata:
+      labels:
+        app: checkoutservice
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5050"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.8.0
+        ports:
+        - containerPort: 5050
+          name: grpc
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "5050"
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: PRODUCT_CATALOG_SERVICE_ADDR
+        - name: SHIPPING_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: SHIPPING_SERVICE_ADDR
+        - name: PAYMENT_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: PAYMENT_SERVICE_ADDR
+        - name: EMAIL_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: EMAIL_SERVICE_ADDR
+        - name: CURRENCY_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CURRENCY_SERVICE_ADDR
+        - name: CART_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CART_SERVICE_ADDR
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          grpc:
+            port: 5050
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          grpc:
+            port: 5050
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Frontend Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: online-boutique
+  labels:
+    app: frontend
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    spec:
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/frontend:v0.8.0
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
+        - name: PORT
+          value: "8080"
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: PRODUCT_CATALOG_SERVICE_ADDR
+        - name: CURRENCY_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CURRENCY_SERVICE_ADDR
+        - name: CART_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CART_SERVICE_ADDR
+        - name: RECOMMENDATION_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: RECOMMENDATION_SERVICE_ADDR
+        - name: SHIPPING_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: SHIPPING_SERVICE_ADDR
+        - name: CHECKOUT_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CHECKOUT_SERVICE_ADDR
+        - name: AD_SERVICE_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AD_SERVICE_ADDR
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /_healthz
+            port: 8080
+            httpHeaders:
+            - name: Cookie
+              value: "shop_session-id=x-liveness-probe"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /_healthz
+            port: 8080
+            httpHeaders:
+            - name: Cookie
+              value: "shop_session-id=x-readiness-probe"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+---
+# Load Generator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgenerator
+  namespace: online-boutique
+  labels:
+    app: loadgenerator
+    environment: staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadgenerator
+  template:
+    metadata:
+      labels:
+        app: loadgenerator
+        environment: staging
+    spec:
+      terminationGracePeriodSeconds: 5
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: main
+        image: gcr.io/google-samples/microservices-demo/loadgenerator:v0.8.0
+        env:
+        - name: FRONTEND_ADDR
+          value: "frontend:80"
+        - name: USERS
+          value: "10"
+        resources:
+          requests:
+            cpu: 300m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
